@@ -47,7 +47,7 @@ void *myrealloc(void *ptr, size_t size) {
 #ifdef MALLOC_DBG
 void mymalloc_infos(char *msg) {
   if (msg) fprintf(stderr, "**********\n*** %s\n", msg);
-
+  
   fprintf(stderr, "# allocs = %3d - # deallocs = %3d - # sbrk = %3d\n",
 	  nb_alloc, nb_dealloc, nb_sbrk);
   /* Ca pourrait être pas mal d'afficher ici les blocs dans la liste libre */

@@ -20,7 +20,6 @@
 void do_alloc_free(int n, int max) {
   void *tab[n];
   int i;
-
   /* boucle d'allocation */
   for (i = 0; i < n; i ++) {
     int size = rand() % max;	/* tirer un nombre dans l'intervalle [0, max-1] */
@@ -74,6 +73,7 @@ int main(int argc, char *argv[]) {
       fprintf(stderr,"Usage: %s [nloop [szmax]]\n", *argv);
       exit(1);
   }
+
   mymalloc_infos("INITIAL");
   do_alloc_free(n, szmax);
   mymalloc_infos("END");
