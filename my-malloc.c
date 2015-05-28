@@ -1,6 +1,7 @@
 #include "my-malloc.h"
 #include <unistd.h>
 #include <stdio.h>
+#include <strings.h>
 
 
 static int nb_alloc   = 0;              /* Nombre de fois où on alloué     */
@@ -114,6 +115,8 @@ void deleteBlockFromFreelist(Header * block){
 
 void * mymalloc(size_t size){
 	nb_alloc += 1;
+	if(size == 0)
+		return NULL;
 	Header * allocatedBlock;
 	//si on a plus d'espace réservé pour le programme
 	if(freelist == NULL){
@@ -163,14 +166,53 @@ void myfree(void *ptr) {
 		}
 	}
 	printf("block free %d : size=%d / next=%d\n", blockToFree, blockToFree->info.size, blockToFree->info.ptr);
+	if(freelist){
+  	Header * tmp = freelist;
+  	while(tmp){
+  		printf("Block %d (Taille : %d / ptr : %d)\n", tmp, tmp->info.size, tmp->info.ptr);
+  		tmp = tmp->info.ptr;
+  	}
+  }
 }
 
 void *mycalloc(size_t nmemb, size_t size) {
-  
+  	if(size == 0 || nmemb == 0)
+  		return NULL;
+  	nb_alloc += 1;
+  	int realSize = nmemb * size;
+  	void * adrReserved = mymalloc(realSize);
+  	if(adrReserved != NULL)
+  		bzero(adrReserved, realSize);
+  		/*int * adrTmp = adrReserved;
+  		for(int i = 0 ; i < realSize ; ++i)
+  			adrTmp[i] = 0;*/
+  	
+  	return adrReserved;
 }
 
 void *myrealloc(void *ptr, size_t size) {
-  
+  	if(ptr == NULL)
+  		return mymalloc(size);
+  	if(size == 0 && ptr != NULL){
+  		myfree(ptr);
+  		return NULL;
+ 	}
+ 	nb_alloc += 1;
+ 	Header * currentBlock = getHeaderBlock(ptr);
+  	if(size > currentBlock->info.size){
+	  	myfree(ptr);
+	  	Header * newBlock = getHeaderBlock(mymalloc(size));
+	  	int * adrSrcData = ptr;
+	  	int * adrDestData = getDebBlock(newBlock);
+	  	for(int i = 0 ; i < currentBlock->info.size ; ++i){
+	  		adrDestData[i] = adrSrcData[i];
+	  	}
+	  	//memcpy(adrDestData, ptr, currentBlock->info.size);
+	  	printf("block realloc %d : size=%d / next=%d\n", newBlock, newBlock->info.size, newBlock->info.ptr);
+	  	return getDebBlock(newBlock);
+  	}
+  	printf("block realloc %d :  size=%d (wanted : %d) / next=%d\n", currentBlock, currentBlock->info.size, size, currentBlock->info.ptr);
+  	return ptr;
 }
 
 void mymalloc_infos(char *msg) {
