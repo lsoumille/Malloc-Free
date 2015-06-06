@@ -10,9 +10,9 @@ static int nb_sbrk    = 0;              /* nombre de fois où a appelé sbrk */
 
 #define MOST_RESTRICTING_TYPE double // Pour s’aligner sur des frontieres multiples
 									// de la taille du type le plus contraignant
-#define SIZE_SBRK 1024 
+#define SIZE_SBRK 1024 //Taille d'un sbrk
 
-#define SIZE_HEADER sizeof(Header) 
+#define SIZE_HEADER sizeof(Header) //Taille d'un header
 
 typedef union header {
 	// Header de bloc
@@ -26,11 +26,12 @@ typedef union header {
 	// Ne sert qu’a provoquer un alignement
 } Header;
 
-static Header * freelist = NULL;
+static Header * freelist = NULL; //liste chainée des blocks libres
 
+//ajoute un bloc a la fin de la liste des blocks libres
 Header * addBlockInFreelist(Header * block){
 	Header * tmp = freelist;
-
+	//si list vide on met directement le block
 	if(tmp == NULL){
 		freelist = block;
 		return freelist;
@@ -40,9 +41,12 @@ Header * addBlockInFreelist(Header * block){
 		tmp = tmp->info.ptr;
 	}
 	tmp->info.ptr = block;
+	//on regarde si le dernier block de la freelist et block 
+	//sont voisins pour les merges 
 	return (mergeBlock(tmp) == 1) ? tmp : block;
 }
 
+//ajoute de l'espace memoire au programme (sbrek)
 Header * extendProgramSpace(){
 	nb_sbrk += 1;
 	Header * extendBlock = sbrk(0);
@@ -55,18 +59,21 @@ Header * extendProgramSpace(){
 	return addBlockInFreelist(extendBlock);
 }
 
+//retourne l'adresse du block a partir du header
 int getDebBlock(Header * block){
 	int adresseDeb = block;
 	adresseDeb += SIZE_HEADER;
 	return adresseDeb;
 }
 
+//retourne le header a partir d'un block
 Header * getHeaderBlock(void * ptr){
 	char * adr = ptr;
 	adr -= SIZE_HEADER;
 	return (void *)adr;
 }
 
+//recherche si un bloc a une taille assez grande pour contenir size_t 
 Header * searchBlock(size_t size){
 	Header * tmp = freelist;
 
@@ -77,6 +84,7 @@ Header * searchBlock(size_t size){
 	return tmp;
 }
 
+//fusionne les block et le suivant si ils sont voisins
 int mergeBlock(Header * block){
 	Header * nextBlock = block->info.ptr;
 	int adrNext = nextBlock;
@@ -89,6 +97,7 @@ int mergeBlock(Header * block){
 	return 0;
 }
 
+//Separe un block en deux partie avec la premiere de la size voulue
 void splitBlock(Header * block, int size){
 	Header * secondBlock = getDebBlock(block) + size;
 	
@@ -99,6 +108,7 @@ void splitBlock(Header * block, int size){
     block->info.ptr = secondBlock;
 }
 
+//supprime un block de la liste chainée
 void deleteBlockFromFreelist(Header * block){
 	if(block == freelist){
 		freelist = (block->info.ptr) ? block->info.ptr : NULL;
@@ -106,9 +116,11 @@ void deleteBlockFromFreelist(Header * block){
 	}
 	if(freelist){
 		Header * tmp = freelist;
-		while (tmp->info.ptr && tmp->info.ptr != block){
+		while (tmp->info.ptr && tmp->info.ptr != block){//parcours de la freelist
             tmp = tmp->info.ptr;
 		}
+		//si on a trouvé le block a supprimé
+		//on le supprime de la liste
 		tmp->info.ptr = (tmp->info.ptr) ? tmp->info.ptr->info.ptr : NULL;
 	}
 }
@@ -125,42 +137,43 @@ void * mymalloc(size_t size){
 
 	//si il y a de l'espace libre réservé 
 	if(freelist){
+		//on cherche si un block libre est dispo
 		allocatedBlock = searchBlock(size);	
-		if(allocatedBlock == NULL){	
+		if(allocatedBlock == NULL){	// si y'en a pas on élargit la mémoire
 			allocatedBlock = extendProgramSpace();
 			if(allocatedBlock == NULL) return NULL;
 		} 
-		if(allocatedBlock) {
+		if(allocatedBlock) {//si on a un on le découpe a la taille souhaité
 			if(allocatedBlock->info.size >= SIZE_HEADER + size){
 				splitBlock(allocatedBlock, size);
 			}
 		}
 	}
-
+	//on l'enleve de la freelist
 	deleteBlockFromFreelist(allocatedBlock);
 	printf("block alloc %d : size=%d / next=%d\n", allocatedBlock, allocatedBlock->info.size, allocatedBlock->info.ptr);
-	return getDebBlock(allocatedBlock);
+	return getDebBlock(allocatedBlock);//return le début de la zone mémoire libre
 }
 
 //ptr -> adresse deb du bloc 
 void myfree(void *ptr) {
 	nb_dealloc += 1;
-	Header * blockToFree = getHeaderBlock(ptr);
-	if(freelist == NULL){
+	Header * blockToFree = getHeaderBlock(ptr);//on récupère le header de la zone a free
+	if(freelist == NULL){// si la freelist est vide le block devient la freelist
 		freelist = blockToFree;
 	} else {
-		if(blockToFree < freelist){
+		if(blockToFree < freelist){// si l'adr memoire du blockfree est avant, le block est mis au début
 			blockToFree->info.ptr = freelist;
 			freelist = blockToFree;
 			mergeBlock(freelist);
 		} else {
-			Header * tmp = freelist;
+			Header * tmp = freelist;//  parcours de la freelist jusqu'a trouvé la place d'une blockfree
 			while (tmp->info.ptr && tmp->info.ptr < blockToFree){
             	tmp = tmp->info.ptr;
 			}
-			blockToFree->info.ptr = tmp->info.ptr;
+			blockToFree->info.ptr = tmp->info.ptr;// ajout de blockfree dans le list
 			tmp->info.ptr = blockToFree;
-
+			//on merge si ils ont des voisins free
 			mergeBlock(blockToFree);
 			mergeBlock(tmp);
 		}
@@ -180,13 +193,10 @@ void *mycalloc(size_t nmemb, size_t size) {
   		return NULL;
   	nb_alloc += 1;
   	int realSize = nmemb * size;
-  	void * adrReserved = mymalloc(realSize);
+  	void * adrReserved = mymalloc(realSize);// allocation de la taille souhaitée
   	if(adrReserved != NULL)
-  		bzero(adrReserved, realSize);
-  		/*int * adrTmp = adrReserved;
-  		for(int i = 0 ; i < realSize ; ++i)
-  			adrTmp[i] = 0;*/
-  	
+  		bzero(adrReserved, realSize);//remplissage de l'espace mémoire avec des 0
+  
   	return adrReserved;
 }
 
