@@ -46,6 +46,18 @@ Header * addBlockInFreelist(Header * block){
 	return (mergeBlock(tmp) == 1) ? tmp : block;
 }
 
+void * myCpy(void * dest, void * src, int size){
+	int * saveAdr = dest;
+	int * srcAdr = src;
+	for(int i = 0 ; i < size ; ++i){
+		//printf("%d = %d\n", *saveAdr, *srcAdr );
+		*saveAdr = *srcAdr;
+		saveAdr+1;
+		srcAdr+1;
+	}
+	return dest;
+}
+
 //ajoute de l'espace memoire au programme (sbrek)
 Header * extendProgramSpace(){
 	nb_sbrk += 1;
@@ -91,7 +103,7 @@ int mergeBlock(Header * block){
 	int adrEndCurrent = getDebBlock(block) + block->info.size;
 	if(adrEndCurrent == adrNext){
 		block->info.ptr = nextBlock->info.ptr;
-		block->info.size += (SIZE_HEADER + nextBlock->info.size);  
+		block->info.size += (SIZE_HEADER + nextBlock->info.size);
 		return 1;
 	}
 	return 0;
@@ -163,29 +175,28 @@ void myfree(void *ptr) {
 		freelist = blockToFree;
 	} else {
 		if(blockToFree < freelist){// si l'adr memoire du blockfree est avant, le block est mis au début
+			printf("%d / %d\n", blockToFree, freelist );
 			blockToFree->info.ptr = freelist;
 			freelist = blockToFree;
 			mergeBlock(freelist);
+			printf("%d\n", freelist->info.size);
 		} else {
 			Header * tmp = freelist;//  parcours de la freelist jusqu'a trouvé la place d'une blockfree
 			while (tmp->info.ptr && tmp->info.ptr < blockToFree){
             	tmp = tmp->info.ptr;
 			}
-			blockToFree->info.ptr = tmp->info.ptr;// ajout de blockfree dans le list
-			tmp->info.ptr = blockToFree;
+			
+			if(tmp->info.ptr != NULL && blockToFree->info.size != 0){
+				blockToFree->info.ptr = tmp->info.ptr;// ajout de blockfree dans le list
+				tmp->info.ptr = blockToFree;
+			}
+			
 			//on merge si ils ont des voisins free
 			mergeBlock(blockToFree);
 			mergeBlock(tmp);
 		}
 	}
 	printf("block free %d : size=%d / next=%d\n", blockToFree, blockToFree->info.size, blockToFree->info.ptr);
-	if(freelist){
-  	Header * tmp = freelist;
-  	while(tmp){
-  		printf("Block %d (Taille : %d / ptr : %d)\n", tmp, tmp->info.size, tmp->info.ptr);
-  		tmp = tmp->info.ptr;
-  	}
-  }
 }
 
 void *mycalloc(size_t nmemb, size_t size) {
@@ -209,20 +220,27 @@ void *myrealloc(void *ptr, size_t size) {
  	}
  	nb_alloc += 1;
  	Header * currentBlock = getHeaderBlock(ptr);
-  	if(size > currentBlock->info.size){
-	  	myfree(ptr);
-	  	Header * newBlock = getHeaderBlock(mymalloc(size));
-	  	int * adrSrcData = ptr;
-	  	int * adrDestData = getDebBlock(newBlock);
-	  	for(int i = 0 ; i < currentBlock->info.size ; ++i){
-	  		adrDestData[i] = adrSrcData[i];
-	  	}
-	  	//memcpy(adrDestData, ptr, currentBlock->info.size);
-	  	printf("block realloc %d : size=%d / next=%d\n", newBlock, newBlock->info.size, newBlock->info.ptr);
-	  	return getDebBlock(newBlock);
+ 	int oldSize = currentBlock->info.size;
+ 	void * oldAdr = ptr; 
+ 	myfree(ptr);
+  	if(size > oldSize){
+	  	void * adrNewBlock = mymalloc(size);
+	  	int * cpMem = adrNewBlock;
+	  	int * cpPtr = ptr;
+	  	void * adrReturn = myCpy(adrNewBlock, ptr, oldSize);
+	  	/*for(int i = 0; i < oldSize ; ++i){
+			printf("%d / %d\n", *cpMem , *cpPtr);
+			cpMem + 1;
+			cpPtr + 1;
+		}*/
+		return adrReturn;
+		/**/
+	  	//printf("block realloc %d : size=%d / next=%d\n", newBlock, newBlock->info.size, newBlock->info.ptr)
+	  	//return adrNewBlock;
+  	} else {
+  		//si on a realloc avec une size plus petite, on free puis malloc classique
+  		return mymalloc(size);
   	}
-  	printf("block realloc %d :  size=%d (wanted : %d) / next=%d\n", currentBlock, currentBlock->info.size, size, currentBlock->info.ptr);
-  	return ptr;
 }
 
 void mymalloc_infos(char *msg) {
@@ -242,3 +260,4 @@ void mymalloc_infos(char *msg) {
 
   if (msg) fprintf(stderr, "**********\n\n");
 }
+
