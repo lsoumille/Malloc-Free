@@ -46,18 +46,6 @@ Header * addBlockInFreelist(Header * block){
 	return (mergeBlock(tmp) == 1) ? tmp : block;
 }
 
-void * myCpy(void * dest, void * src, int size){
-	int * saveAdr = dest;
-	int * srcAdr = src;
-	for(int i = 0 ; i < size ; ++i){
-		//printf("%d = %d\n", *saveAdr, *srcAdr );
-		*saveAdr = *srcAdr;
-		saveAdr+1;
-		srcAdr+1;
-	}
-	return dest;
-}
-
 //ajoute de l'espace memoire au programme (sbrek)
 Header * extendProgramSpace(){
 	nb_sbrk += 1;
@@ -163,23 +151,20 @@ void * mymalloc(size_t size){
 	}
 	//on l'enleve de la freelist
 	deleteBlockFromFreelist(allocatedBlock);
-	printf("block alloc %d : size=%d / next=%d\n", allocatedBlock, allocatedBlock->info.size, allocatedBlock->info.ptr);
 	return getDebBlock(allocatedBlock);//return le début de la zone mémoire libre
 }
 
 //ptr -> adresse deb du bloc 
-void myfree(void *ptr) {
+void myfree(void * ptr) {
 	nb_dealloc += 1;
 	Header * blockToFree = getHeaderBlock(ptr);//on récupère le header de la zone a free
 	if(freelist == NULL){// si la freelist est vide le block devient la freelist
 		freelist = blockToFree;
 	} else {
 		if(blockToFree < freelist){// si l'adr memoire du blockfree est avant, le block est mis au début
-			printf("%d / %d\n", blockToFree, freelist );
 			blockToFree->info.ptr = freelist;
 			freelist = blockToFree;
 			mergeBlock(freelist);
-			printf("%d\n", freelist->info.size);
 		} else {
 			Header * tmp = freelist;//  parcours de la freelist jusqu'a trouvé la place d'une blockfree
 			while (tmp->info.ptr && tmp->info.ptr < blockToFree){
@@ -221,22 +206,11 @@ void *myrealloc(void *ptr, size_t size) {
  	nb_alloc += 1;
  	Header * currentBlock = getHeaderBlock(ptr);
  	int oldSize = currentBlock->info.size;
- 	void * oldAdr = ptr; 
  	myfree(ptr);
   	if(size > oldSize){
 	  	void * adrNewBlock = mymalloc(size);
-	  	int * cpMem = adrNewBlock;
-	  	int * cpPtr = ptr;
-	  	void * adrReturn = myCpy(adrNewBlock, ptr, oldSize);
-	  	/*for(int i = 0; i < oldSize ; ++i){
-			printf("%d / %d\n", *cpMem , *cpPtr);
-			cpMem + 1;
-			cpPtr + 1;
-		}*/
-		return adrReturn;
-		/**/
-	  	//printf("block realloc %d : size=%d / next=%d\n", newBlock, newBlock->info.size, newBlock->info.ptr)
-	  	//return adrNewBlock;
+	  	memcpy(adrNewBlock, ptr, oldSize);
+		return adrNewBlock;
   	} else {
   		//si on a realloc avec une size plus petite, on free puis malloc classique
   		return mymalloc(size);
