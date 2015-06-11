@@ -44,9 +44,18 @@ void do_alloc_free(int n, int max) {
   /*      - Etape 2: on alloue dans les nouveaux trous */
   for (i = 0; i < n; i += 2) {
     int size = rand() % max;	/* tirer un nombre dans l'intervalle [0, max-1] */
-    //tab[i] = mymalloc(size);
-    //tab[i] = myrealloc(tab[i+1], 10);
-    tab[i] = mycalloc(1, size);
+    /* malloc */
+    tab[i] = mymalloc(size);
+    /* malloc */
+
+    /* realloc */
+    //tab[i] = myrealloc(tab[i+1], 210);
+    /* realloc */
+
+    /* calloc */ 
+    //tab[i] = mycalloc(1, size);
+    /* calloc */
+
     if (tab[i] == NULL)
       printf("**NOT OK (2nd allocation loop) @%d (size = %d)**\n", i, size);
   }
@@ -54,9 +63,19 @@ void do_alloc_free(int n, int max) {
 
 
   /*       - Etape 3: On libère le tout */
+
+  /* realloc */
+  //for (i = 0; i < n; i+=2) {
+  //  if (tab[i] != NULL) myfree(tab[i]);
+  //}
+  /* realloc */
+
+  /* malloc - calloc */
   for (i = 0; i < n; i++) {
     if (tab[i] != NULL) myfree(tab[i]);
   }
+  /* malloc - realloc */
+
 }
 
 

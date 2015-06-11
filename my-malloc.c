@@ -37,13 +37,14 @@ Header * addBlockInFreelist(Header * block){
 		return freelist;
 	}
 
-	while(tmp->info.ptr != NULL){//parcours de la freelist
+	//parcours de la freelist
+	while(tmp->info.ptr != NULL)
 		tmp = tmp->info.ptr;
-	}
+
 	tmp->info.ptr = block;
 	//on regarde si le dernier block de la freelist et block 
 	//sont voisins pour les merges 
-	return (mergeBlock(tmp) == 1) ? tmp : block;
+	return mergeBlock(tmp) ? tmp : block;
 }
 
 //ajoute de l'espace memoire au programme (sbrek)
@@ -77,9 +78,9 @@ Header * getHeaderBlock(void * ptr){
 Header * searchBlock(size_t size){
 	Header * tmp = freelist;
 
-	while(tmp && (tmp->info.size < size)){//parcours de la freelist
+	//parcours de la freelist
+	while(tmp && (tmp->info.size < size))
 		tmp = tmp->info.ptr;
-	}
 
 	return tmp;
 }
@@ -144,9 +145,8 @@ void * mymalloc(size_t size){
 			if(allocatedBlock == NULL) return NULL;
 		} 
 		if(allocatedBlock) {//si on a un on le découpe a la taille souhaité
-			if(allocatedBlock->info.size >= SIZE_HEADER + size){
+			if(allocatedBlock->info.size >= SIZE_HEADER + size)
 				splitBlock(allocatedBlock, size);
-			}
 		}
 	}
 	//on l'enleve de la freelist
@@ -158,18 +158,18 @@ void * mymalloc(size_t size){
 void myfree(void * ptr) {
 	nb_dealloc += 1;
 	Header * blockToFree = getHeaderBlock(ptr);//on récupère le header de la zone a free
-	if(freelist == NULL){// si la freelist est vide le block devient la freelist
-		freelist = blockToFree;
-	} else {
+	if(freelist == NULL)// si la freelist est vide le block devient la freelist
+		freelist = blockToFree; 
+	else 
+	{
 		if(blockToFree < freelist){// si l'adr memoire du blockfree est avant, le block est mis au début
 			blockToFree->info.ptr = freelist;
 			freelist = blockToFree;
 			mergeBlock(freelist);
 		} else {
 			Header * tmp = freelist;//  parcours de la freelist jusqu'a trouvé la place d'une blockfree
-			while (tmp->info.ptr && tmp->info.ptr < blockToFree){
+			while (tmp->info.ptr && tmp->info.ptr < blockToFree)
             	tmp = tmp->info.ptr;
-			}
 			
 			if(tmp->info.ptr != NULL && blockToFree->info.size != 0){
 				blockToFree->info.ptr = tmp->info.ptr;// ajout de blockfree dans le list
@@ -181,7 +181,6 @@ void myfree(void * ptr) {
 			mergeBlock(tmp);
 		}
 	}
-	printf("block free %d : size=%d / next=%d\n", blockToFree, blockToFree->info.size, blockToFree->info.ptr);
 }
 
 void *mycalloc(size_t nmemb, size_t size) {
