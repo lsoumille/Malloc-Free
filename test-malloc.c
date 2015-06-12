@@ -71,9 +71,9 @@ void do_alloc_free(int n, int max) {
   /* realloc */
 
   /* malloc - calloc */
-  for (i = 0; i < n; i++) {
-    if (tab[i] != NULL) myfree(tab[i]);
-  }
+  //for (i = 0; i < n; i++) {
+  //  if (tab[i] != NULL) myfree(tab[i]);
+  //}
   /* malloc - realloc */
 
 }
