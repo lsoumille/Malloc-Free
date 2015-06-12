@@ -1,0 +1,19 @@
+Projet : Allocation dynamique 
+
+Date : 12/06/2015
+
+Membres du bînome : Cindy NAJJAR | Lucas SOUMILLE
+
+SI 3 Groupe 4
+
+/* Compilation */
+make dans le dossier du projet
+
+/* Execution */
+
+- Pour tester malloc, décommenter le code entre les balises /* malloc */ dans la fonction do_alloc_free
+
+- Pour tester calloc, décommenter le code entre les balises /* calloc */ dans la fonction do_alloc_free
+
+- Pour tester realloc, décommenter le code entre les balises /* realloc */ dans la fonction do_alloc_free
+(Laisser les valeurs par défaut ou changer la valeur dans l'appel de realloc)   
